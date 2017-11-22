@@ -37,7 +37,7 @@ void setup()    {
         while (1);
     }
 
-    byte sampleRate = 250; //Sample at 250 Hz
+    byte sampleRate = 200; //Sample at 250 Hz
     byte ledBrightness = 0xFF; //Options: 0=Off to 255=50mA
     byte sampleAverage = 4; //Options: 1, 2, 4, 8, 16, 32
     byte ledMode = 2; //Options: 1 = Red only, 2 = Red + IR, 3 = Red + IR + Green
@@ -50,7 +50,7 @@ void setup()    {
     particleSensor.setup(ledBrightness, sampleAverage, ledMode, sampleRate, pulseWidth, adcRange);
 
     // Initialize accelerometer
-    myIMU.settings.accelSampleRate = 250;
+    myIMU.settings.accelSampleRate = 150;
     myIMU.settings.accelRange = 16;
     myIMU.begin();
 
