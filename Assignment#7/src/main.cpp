@@ -19,10 +19,8 @@ LIS3DH myIMU;
 
 #define debug Serial
 
-// const char *ssid = "UCInet Mobile Access";
-const char *ssid = "26D-Comrades2.4";
-const char *password = "AisDhaDivHarNit26D";
-const String URL = "http://54.183.180.162/assignment6.php";
+const char *ssid = "UCInet Mobile Access";
+const String URL = "http://******/assignment6.php";
 
 const int BATCH = 100;
 int batchCount = 0;
@@ -83,7 +81,7 @@ void sendDataToServer() {
     // WiFi.mode(WIFI_OFF);
     // WiFi.mode(WIFI_STA);
     if (WiFi.status() != WL_CONNECTED) {
-        WiFi.begin(ssid, password);
+        WiFi.begin(ssid);
     }
 
     Serial.println("After wifi begin");
