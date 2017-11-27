@@ -1,0 +1,3 @@
+The calculated SpO2:-  96.2931918731
+The calculated Respiration Rate:-  16.2325713011
+The calculated Heart Rate:-  53.0132693923
