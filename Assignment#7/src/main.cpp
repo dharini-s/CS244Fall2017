@@ -20,13 +20,14 @@ LIS3DH myIMU;
 #define debug Serial
 
 const char *ssid = "UCInet Mobile Access";
-const String URL = "http://******/assignment6.php";
+const String URL = "http://***.***.***.***/assignment6.php";
 
 const int BATCH = 100;
 int batchCount = 0;
 unsigned long start = 0;
-// 1 min in milliseconds
-unsigned long end = 15000;
+// 10 min in milliseconds
+unsigned long end = 600000;
+int count = 0;
 File f1;
 File f2;
 
@@ -52,8 +53,8 @@ void setup()    {
         while(1);
     }
 
-    byte sampleRate = 250; //Sample at 250 Hz
-    byte ledBrightness = 0xFF; //Options: 0=Off to 255=50mA
+    byte sampleRate = 200; //Sample at 250 Hz
+    byte ledBrightness = 0x02; //Options: 0=Off to 255=50mA
     byte sampleAverage = 4; //Options: 1, 2, 4, 8, 16, 32
     byte ledMode = 2; //Options: 1 = Red only, 2 = Red + IR, 3 = Red + IR + Green
     int pulseWidth = 411;
@@ -65,7 +66,7 @@ void setup()    {
     particleSensor.setup(ledBrightness, sampleAverage, ledMode, sampleRate, pulseWidth, adcRange);
 
     // Initialize accelerometer
-    myIMU.settings.accelSampleRate = 300;
+    myIMU.settings.accelSampleRate = 150;
     myIMU.settings.accelRange = 16;
     myIMU.begin();
     
@@ -82,13 +83,13 @@ void sendDataToServer() {
     // WiFi.mode(WIFI_STA);
     if (WiFi.status() != WL_CONNECTED) {
         WiFi.begin(ssid);
-    }
+     }
 
-    Serial.println("After wifi begin");
-    delay(2000);
+    // Serial.println("After wifi begin");
 
     while (WiFi.status() != WL_CONNECTED) {
         Serial.print("Attempting to connect...");
+        delay(1000);
     }
     if (WiFi.status() == WL_CONNECTED) {  
         HTTPClient http;
@@ -97,36 +98,45 @@ void sendDataToServer() {
         String s1 = "";
         String s2 = "";
 
-        while (f1.available())   {
-            // Serial.println("In file1 read");
-            String s = f1.readStringUntil('\n');
-            s1 += s + "\n";
-            // Serial.println(s);
-        }
-        
+        int cnt2 = 0;
         while (f2.available())   {
-            // Serial.println("In file2 read");
             String s = f2.readStringUntil('\n');
             s2 += s + "\n";
-            // Serial.println(s);     
+            cnt2++;
+            if (cnt2 == 100){
+                cnt2 = 0;
+                particle_sensor_data += s2;
+                // Serial.println("PPG data:" + particle_sensor_data);
+                http.begin(URL);
+                http.addHeader("Content-Type", "application/x-www-form-urlencoded");
+                http.POST(particle_sensor_data);
+                http.writeToStream(&Serial);
+                s2= "";
+            }     
         }
-        accelerometer_data += s1;
-        Serial.println("Accelerometer data:" + accelerometer_data);
-        http.begin(URL);
-        http.addHeader("Content-Type", "application/x-www-form-urlencoded");
-        http.POST(accelerometer_data);
-        http.writeToStream(&Serial);
+        f2.close();
 
-        particle_sensor_data += s2;
-        Serial.println("PPG data:" + particle_sensor_data);
-        http.begin(URL);
-        http.addHeader("Content-Type", "application/x-www-form-urlencoded");
-        http.POST(particle_sensor_data);
-        http.writeToStream(&Serial);
+        int cnt1 = 0;
+        while (f1.available())   {
+            String s = f1.readStringUntil('\n');
+            s1 += s + "\n";
+            cnt1++;
+            if (cnt1 == 100){
+                cnt1 = 0;
+                accelerometer_data += s1;
+                http.begin(URL);
+                http.addHeader("Content-Type", "application/x-www-form-urlencoded");
+                http.POST(accelerometer_data);
+                http.writeToStream(&Serial);
+                s1= "";
+            }
+        }
+        f1.close();
+        SPIFFS.remove("/f1.txt");
+        SPIFFS.remove("/f2.txt");
 
         http.end();
-        f1.close();
-        f2.close();
+        
     }
     else    {
         Serial.println("Not connected to WiFi.");
@@ -134,7 +144,6 @@ void sendDataToServer() {
 }
     
 void writeToFile()  {
-    // Serial.println("Before file open");
     // Open file for writing
     f1 = SPIFFS.open("/f1.txt", "a");
     f2 = SPIFFS.open("/f2.txt", "a");
@@ -143,16 +152,13 @@ void writeToFile()  {
     }
     String accelerometer_data = "";
     String particle_sensor_data = "";
-    // Serial.println("In writeToFile()");
 
     // write to file
     for(int i = 0; i < BATCH; i++)  {
         accelerometer_data = accelerometer_data + x[i] + "," + y[i] + "," + z[i] + "\n";
         particle_sensor_data = particle_sensor_data + ppg_data[i] + "\n";
     }
-    // Serial.print(accelerometer_data);
-    // Serial.print(particle_sensor_data);
-    // Serial.println("Before writing to file");
+
     f1.print(accelerometer_data);
     f2.print(particle_sensor_data);
     f1.close();
@@ -162,26 +168,26 @@ void writeToFile()  {
 void loop() {
     // Gather the IR and RED data, and accelerometer data  
         if (millis() < end) {
-            // Serial.println("Gathering data");
             // Get the PPG sensor data
             ppg_data[batchCount] = (String)particleSensor.getRed() + "," + (String)particleSensor.getIR();
-
             // Get the accelerometer data
             x[batchCount] = myIMU.readFloatAccelX();
             y[batchCount] = myIMU.readFloatAccelY();
             z[batchCount] = myIMU.readFloatAccelZ();
-
-            // Serial.println("X=" + (String) x[batchCount]);
             
             batchCount++;
-            // Serial.println("Before write to file");
+            // Serial.println(batchCount);
             if ((batchCount % BATCH) == 0) {
                 writeToFile();
                 batchCount = 0;
+                count++;
+                if(count == 45) {
+                    sendDataToServer();
+                    count = 0;
+                }
             }
         }
         else {
-            sendDataToServer();
             Serial.println("Sent data to server");
             wdt_reset();
             while(1)    {
