@@ -16,6 +16,9 @@ HTTPClient http;
 
 // WiFi settings
 //const char *ssid = "UCInet Mobile Access";
+const char *ssid = "";
+const char *password = "";
+const char *server_address = "http://**.***.***.***/assignment6.php";
 
 const int PACKAGES = 300;
 const int VALUES_PER_PACKAGE = 100;
