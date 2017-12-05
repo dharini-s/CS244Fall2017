@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 
 import math
 
-data = np.genfromtxt("standingPpg.csv",delimiter=",", skip_header=1, dtype=float)
+data = np.genfromtxt("data/walking/walkingPPG.csv",delimiter=",", skip_header=1, dtype=float)
 formattedData = np.empty((data.shape[0], 3))
 formattedData[:,:] = data[:,0:3]
 
@@ -133,28 +133,28 @@ for i in range(len(acRed)):
 from collections import Counter
 counts = Counter(spo2ans)
 maxCountTuple = counts.most_common(1)
-spo2CleanedAns = filter(lambda a:a !=maxCountTuple[0][0], spo2ans)
+spo2CleanedAns = list(filter(lambda a:a !=maxCountTuple[0][0], spo2ans))
 
 for i in spo2ans:
     file1.write("%s\n" % i)
 file1.close()
 
 #SPO2 data dump
-with open('standingSpo2Dump.csv', 'wb') as f:
+with open('standingSpo2Dump.csv', 'w') as f:
     writer = csv.writer(f)
     for val in spo2CleanedAns:
         writer.writerow([val])
 
 spo2Value = np.mean(spo2CleanedAns)
-print "The calculated SpO2:- ", spo2Value
+print ("The calculated SpO2:- ", spo2Value)
 
 
 #Resp and Heart rate
 for item in np.array_split(dataSignal, splits):
     avg = np.mean(item)
     item = item-avg
-    print "Item", item
-    print "Item-avg", item-avg
+    print ("Item", item)
+    print ("Item-avg", item-avg)
     fourier = np.fft.fft(item)
     absoluteVal = abs(fourier)**2
     freq = np.fft.fftfreq(item.size, d=timestep)
@@ -162,7 +162,7 @@ for item in np.array_split(dataSignal, splits):
     filteredDataSignal = butterworthFilter(item, heartRateFreq-0.5, heartRateFreq+0.5, sampleFreq)    
     maximums, mins = findMaxMins(filteredDataSignal[5000:])
     heartrateList = [(60*50/float(maximums[i]-maximums[i-1])) for i in range(1, len(maximums))]
-    with open('standingHeartRateDump.csv', 'wb') as f:
+    with open('standingHeartRateDump.csv', 'w') as f:
         writer = csv.writer(f)
         for val in heartrateList:
             writer.writerow([val])
@@ -175,9 +175,9 @@ for item in np.array_split(dataSignal, splits):
     filteredDataSignal = butterworthFilter(item, 0.2, 0.4, sampleFreq, order = 4)    
     maximums, mins = findMaxMins(filteredDataSignal[5000:])
     resprate_arr = [(60*50/float(maximums[i]-maximums[i-1])) for i in range(1, len(maximums))]
-    resprate_arr = filter(lambda x: 6<x<24,  resprate_arr)
+    resprate_arr = list(filter(lambda x: 6<x<24,  resprate_arr))
     #SPO2 data dump
-    with open('standingRespRateDump.csv', 'wb') as f:
+    with open('standingRespRateDump.csv', 'w') as f:
         writer = csv.writer(f)
         for val in resprate_arr:
             writer.writerow([val])
@@ -188,5 +188,5 @@ for item in np.array_split(dataSignal, splits):
 file2.close()
 file3.close()
 
-print "The calculated Respiration Rate:- ", respRate
-print "The calculated Heart Rate:- ", heartRate
+print ("The calculated Respiration Rate:- ", respRate)
+print ("The calculated Heart Rate:- ", heartRate)
